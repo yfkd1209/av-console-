@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>KACHIDOKI CONSOLE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#16150f;
+    --bg-1:#201e17;
+    --panel:#2b2820;
+    --panel-hi:#38342a;
+    --seam:#0e0d09;
+    --text:#efe8d8;
+    --text-dim:#9a927e;
+    --amber:#e8a33d;
+    --amber-dim:#7a5a26;
+    --teal:#4fa8a0;
+    --teal-dim:#2c5a55;
+    --danger:#c4623d;
+    --danger-dim:#6b3320;
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:
+      radial-gradient(ellipse at 20% -10%, #2a2719 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 110%, #1c2320 0%, transparent 50%),
+      var(--bg-0);
+    color:var(--text);
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    overflow:hidden;
+    -webkit-user-select:none; user-select:none;
+  }
+
+  .stage{
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    padding: max(22px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
+    gap:18px;
+  }
+
+  /* ---------- Header plate ---------- */
+  .plate{
+    background:linear-gradient(180deg, var(--panel-hi), var(--panel));
+    border-radius:14px;
+    padding:16px 22px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.05) inset,
+      0 -2px 6px rgba(0,0,0,0.4) inset,
+      0 8px 18px rgba(0,0,0,0.35);
+    border:1px solid var(--seam);
+    flex-shrink:0;
+  }
+  .plate-title{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    letter-spacing:0.28em;
+    font-size:13px;
+    color:var(--text-dim);
+  }
+  .plate-title b{ color:var(--amber); font-weight:700; }
+  .plate-clock{
+    font-family:'JetBrains Mono', monospace;
+    font-size:15px;
+    color:var(--text-dim);
+    letter-spacing:0.08em;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .dot-live{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--teal);
+    box-shadow:0 0 8px var(--teal);
+    animation:pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+
+  /* ---------- Grid ---------- */
+  .grid{
+    flex:1;
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    grid-template-rows:repeat(2, 1fr);
+    gap:18px;
+    min-height:0;
+  }
+  .key.wide{ grid-column:span 2; }
+
+  .key{
+    position:relative;
+    border-radius:18px;
+    border:none;
+    padding:0;
+    cursor:pointer;
+    text-decoration:none;
+    -webkit-touch-callout:none;
+    background:linear-gradient(180deg, var(--panel-hi) 0%, var(--panel) 60%, #262319 100%);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.06) inset,
+      0 -3px 8px rgba(0,0,0,0.45) inset,
+      0 10px 20px rgba(0,0,0,0.4),
+      0 1px 0 var(--seam);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    transition:transform 0.08s ease, box-shadow 0.08s ease;
+    color:var(--text);
+    font-family:inherit;
+  }
+  .key:active{
+    transform:translateY(3px) scale(0.99);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.04) inset,
+      0 2px 4px rgba(0,0,0,0.5) inset,
+      0 3px 8px rgba(0,0,0,0.35);
+  }
+
+  .key .led{
+    position:absolute;
+    top:14px; left:16px;
+    width:9px; height:9px;
+    border-radius:50%;
+    background:var(--led-off, #4a4433);
+    box-shadow:0 0 0 rgba(0,0,0,0);
+    transition:background 0.15s ease, box-shadow 0.15s ease;
+  }
+  .key:active .led{
+    background:var(--led-c, var(--amber));
+    box-shadow:0 0 14px 2px var(--led-c, var(--amber));
+  }
+
+  .key .glyph{
+    width:44px; height:44px;
+    stroke:var(--icon-c, var(--amber));
+    fill:none;
+    stroke-width:1.6;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    opacity:0.92;
+  }
+
+  .key .label{
+    font-size:22px;
+    font-weight:700;
+    letter-spacing:0.02em;
+  }
+
+  .key .sub{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.22em;
+    color:var(--text-dim);
+    text-transform:uppercase;
+  }
+
+  .key.tone-teal{ --icon-c:var(--teal); --led-c:var(--teal); }
+  .key.tone-danger{ --icon-c:var(--danger); --led-c:var(--danger); }
+
+  /* ---------- Footer plate ---------- */
+  .footer{
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.3em;
+    color:#4d4838;
+    flex-shrink:0;
+  }
+
+  /* Toast feedback */
+  .toast{
+    position:fixed;
+    left:50%; bottom:34px;
+    transform:translateX(-50%) translateY(20px);
+    background:rgba(20,19,14,0.92);
+    border:1px solid var(--seam);
+    color:var(--text);
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.14em;
+    padding:12px 20px;
+    border-radius:10px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.25s ease, transform 0.25s ease;
+    z-index:10;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast b{ color:var(--amber); }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <div class="plate">
+    <div class="plate-title">KACHIDOKI <b>&mdash;</b> AV CONSOLE</div>
+    <div class="plate-clock"><span class="dot-live"></span><span id="clock"></span></div>
+  </div>
+
+  <div class="grid" id="grid">
+    <a class="key tone-danger" data-name="システムオフ" href="shortcuts://run-shortcut?name=システムオフ">
+      <span class="led"></span>
+      <svg class="glyph" viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/></svg>
+      <span class="label">システムオフ</span>
+      <span class="sub">ALL OFF</span>
+    </a>
+    <a class="key" data-name="システムオン" href="shortcuts://run-shortcut?name=システムオン">
+      <span class="led"></span>
+      <svg class="glyph" viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/></svg>
+      <span class="label">システムオン</span>
+      <span class="sub">ALL ON</span>
+    </a>
+    <a class="key tone-teal" data-name="就寝モード" href="shortcuts://run-shortcut?name=就寝モード">
+      <span class="led"></span>
+      <svg class="glyph" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+      <span class="label">就寝モード</span>
+      <span class="sub">SLEEP</span>
+    </a>
+    <a class="key" data-name="起床モード" href="shortcuts://run-shortcut?name=起床モード">
+      <span class="led"></span>
+      <svg class="glyph" viewBox="0 0 24 24"><path d="M4 18h16"/><path d="M6 18a6 6 0 0 1 12 0"/><path d="M12 4v3"/><path d="M4.5 8.5l1.8 1.8"/><path d="M19.5 8.5l-1.8 1.8"/><path d="M2 21h20"/></svg>
+      <span class="label">起床モード</span>
+      <span class="sub">WAKE</span>
+    </a>
+    <a class="key tone-teal wide" data-name="MUTE" href="shortcuts://run-shortcut?name=MUTE">
+      <span class="led"></span>
+      <svg class="glyph" viewBox="0 0 24 24"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M16 9l5 5"/><path d="M21 9l-5 5"/></svg>
+      <span class="label">MUTE</span>
+      <span class="sub">QUIET</span>
+    </a>
+    <a class="key" data-name="入力TV" href="shortcuts://run-shortcut?name=入力TV">
+      <span class="led"></span>
+      <svg class="glyph" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="1.6"/><path d="M8 21h8"/><path d="M12 18v3"/><path d="M8 3l4 3 4-3"/></svg>
+      <span class="label">入力TV</span>
+      <span class="sub">INPUT 1</span>
+    </a>
+    <a class="key" data-name="入力PS5" href="shortcuts://run-shortcut?name=入力PS5">
+      <span class="led"></span>
+      <svg class="glyph" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="9" rx="4.5"/><path d="M8 11v3"/><path d="M6.5 12.5h3"/><circle cx="16" cy="11.6" r="0.9" fill="currentColor" stroke="none"/><circle cx="18" cy="13.6" r="0.9" fill="currentColor" stroke="none"/></svg>
+      <span class="label">入力PS5</span>
+      <span class="sub">INPUT 2</span>
+    </a>
+  </div>
+
+  <div class="footer">SCENE CONTROL &middot; NATURE REMO / HUE &middot; TAP TO RUN</div>
+</div>
+
+<script>
+  // JavaScriptが動く環境では、実行後に自動でこの画面へ戻るよう試みる。
+  // 動かない/失敗する環境では、上のhrefがそのまま使われるので機能は失われない。
+  try{
+    document.querySelectorAll('.key').forEach(function(a){
+      a.addEventListener('click', function(e){
+        try{
+          var name = a.getAttribute('data-name');
+          var back = encodeURIComponent(location.href);
+          var url = 'shortcuts://x-callback-url/run-shortcut?name=' + encodeURIComponent(name) + '&x-success=' + back;
+          e.preventDefault();
+          location.href = url;
+        }catch(err){ /* 失敗時は通常のhrefに任せる */ }
+      });
+    });
+  }catch(e){}
+
+  function tick(){
+    try{
+      var d = new Date();
+      var hh = String(d.getHours()).padStart(2,'0');
+      var mm = String(d.getMinutes()).padStart(2,'0');
+      var el = document.getElementById('clock');
+      if(el) el.textContent = hh + ':' + mm;
+    }catch(e){}
+  }
+  tick();
+  setInterval(tick, 5000);
+</script>
+
+</body>
+</html>
