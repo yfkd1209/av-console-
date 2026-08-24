@@ -263,22 +263,7 @@
 </div>
 
 <script>
-  // JavaScriptが動く環境では、実行後に自動でこの画面へ戻るよう試みる。
-  // 動かない/失敗する環境では、上のhrefがそのまま使われるので機能は失われない。
-  try{
-    document.querySelectorAll('.key').forEach(function(a){
-      a.addEventListener('click', function(e){
-        try{
-          var name = a.getAttribute('data-name');
-          var back = encodeURIComponent(location.href);
-          var url = 'shortcuts://x-callback-url/run-shortcut?name=' + encodeURIComponent(name) + '&x-success=' + back;
-          e.preventDefault();
-          location.href = url;
-        }catch(err){ /* 失敗時は通常のhrefに任せる */ }
-      });
-    });
-  }catch(e){}
-
+<script>
   function tick(){
     try{
       var d = new Date();
