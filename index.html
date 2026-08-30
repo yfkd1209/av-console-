@@ -203,6 +203,34 @@
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
   .toast b{ color:var(--amber); }
+
+  /* ---------- Lock state ---------- */
+  .key.locked{
+    pointer-events:none;
+    opacity:0.28;
+    filter:saturate(0.2);
+  }
+  .key.locked:active{ transform:none; }
+
+  .lockbar{
+    display:none;
+    align-items:center;
+    gap:10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    letter-spacing:0.14em;
+    color:var(--amber);
+  }
+  body.is-locked .lockbar{ display:flex; }
+  body.is-locked .plate-clock{ display:none; }
+
+  .lock-ring{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--amber);
+    box-shadow:0 0 10px var(--amber);
+    animation:blink 1s steps(2, start) infinite;
+  }
+  @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:0.2;} }
 </style>
 </head>
 <body>
@@ -212,6 +240,7 @@
   <div class="plate">
     <div class="plate-title">KACHIDOKI <b>&mdash;</b> AV CONSOLE</div>
     <div class="plate-clock"><span class="dot-live"></span><span id="clock"></span></div>
+    <div class="lockbar"><span class="lock-ring"></span><span>実行中 <b id="lockSec">30</b>s</span></div>
   </div>
 
   <div class="grid" id="grid">
@@ -263,7 +292,7 @@
 </div>
 
 <script>
-<script>
+  /* ===== 時計 ===== */
   function tick(){
     try{
       var d = new Date();
@@ -275,6 +304,84 @@
   }
   tick();
   setInterval(tick, 5000);
+
+  /* ===== 30秒ロック =====
+     シーン系4ボタン（システムオフ／システムオン／就寝モード／起床モード）を押すと
+     30秒間すべてのボタンを操作不可にする。
+     Shortcutsから戻った際にページが再読込されても継続するよう、解除時刻を保存する。 */
+  (function(){
+    var LOCK_MS = 30000;
+    var STORE_KEY = 'avconsole_lock_until';
+    var SCENE_KEYS = ['システムオフ','システムオン','就寝モード','起床モード'];
+
+    var keys = Array.prototype.slice.call(document.querySelectorAll('.key'));
+    var secEl = document.getElementById('lockSec');
+    var lockUntil = 0;
+    var timer = null;
+
+    function readStore(){
+      try{
+        var v = window.localStorage.getItem(STORE_KEY);
+        return v ? parseInt(v, 10) : 0;
+      }catch(e){ return 0; }
+    }
+    function writeStore(v){
+      try{ window.localStorage.setItem(STORE_KEY, String(v)); }catch(e){}
+    }
+
+    function render(){
+      var remain = lockUntil - Date.now();
+      if(remain > 0){
+        document.body.classList.add('is-locked');
+        keys.forEach(function(k){ k.classList.add('locked'); });
+        if(secEl) secEl.textContent = Math.ceil(remain / 1000);
+      }else{
+        document.body.classList.remove('is-locked');
+        keys.forEach(function(k){ k.classList.remove('locked'); });
+        if(timer){ clearInterval(timer); timer = null; }
+      }
+    }
+
+    function startWatch(){
+      render();
+      if(!timer && lockUntil > Date.now()){
+        timer = setInterval(render, 250);
+      }
+    }
+
+    // ページを開いた時点で、まだロック期間中かどうか確認する
+    lockUntil = readStore();
+    startWatch();
+
+    keys.forEach(function(a){
+      a.addEventListener('click', function(e){
+        // ロック中は何もしない（クラスでも塞いでいるが二重の保険）
+        if(Date.now() < lockUntil){
+          e.preventDefault();
+          return;
+        }
+        var name = a.getAttribute('data-name');
+        if(SCENE_KEYS.indexOf(name) !== -1){
+          lockUntil = Date.now() + LOCK_MS;
+          writeStore(lockUntil);
+          startWatch();
+        }
+        // ここでpreventDefaultしない＝通常どおりhrefのショートカットが実行される
+      });
+    });
+
+    // Shortcutsから戻ってきた時（bfcache復帰含む）に再確認する
+    window.addEventListener('pageshow', function(){
+      lockUntil = readStore();
+      startWatch();
+    });
+    document.addEventListener('visibilitychange', function(){
+      if(!document.hidden){
+        lockUntil = readStore();
+        startWatch();
+      }
+    });
+  })();
 </script>
 
 </body>
