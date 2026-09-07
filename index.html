@@ -396,7 +396,16 @@
           writeStore(lockUntil);
           startWatch();
         }
-        // ここでpreventDefaultしない＝通常どおりhrefのショートカットが実行される
+        // 実行後にこの画面へ自動で戻れるか試験中。
+        // 失敗しても実害が出ないよう、通常のhrefにフォールバックする。
+        try{
+          e.preventDefault();
+          var back = encodeURIComponent(location.href);
+          var url = 'shortcuts://x-callback-url/run-shortcut?name=' + encodeURIComponent(name) + '&x-success=' + back;
+          location.href = url;
+        }catch(err){
+          location.href = a.getAttribute('href');
+        }
       });
     });
 
